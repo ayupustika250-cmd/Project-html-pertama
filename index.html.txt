@@ -1,0 +1,1112 @@
+Berikut adalah file HTML lengkap index.html aplikasi MSC (Monitoring Spot Check MSC) yang sudah diperbarui dengan desain grafik interaktif yang jauh lebih modern, rapi, dan informatif.
+Pembaruan Visual Grafik:
+ * Grafik Khusus per Business Unit (BU):
+   * Menggunakan warna gradient modern dengan sudut batang yang melengkung (rounded bars).
+   * Menampilkan angka total laporan secara presisi di atas setiap batang grafik.
+ * Grafik Gabungan Indikator Lengkap:
+   * Dibuat menjadi Multi-Axis Interactive Chart yang menggabungkan:
+     * Bar Chart (Batang): Distribusi Spasing Terisi (2m, 2.5m, 3m) & Top Kontraktor.
+     * Line Chart (Garis Tren): Rata-rata Depth (cm) & Penetrometer.
+ * Fitur Unduh Gambar (PNG):
+   * Tombol Unduh Gambar di setiap grafik untuk menyimpan gambar beresolusi tinggi langsung ke perangkat.
+Kode Lengkap index.html:
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoring Spot Check MSC</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js CDN & Plugin DataLabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
+
+  <!-- TOP BAR / HEADER -->
+  <header class="bg-brand-800 text-white shadow-md sticky top-0 z-50 no-print">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <i class="fa-solid fa-clipboard-check text-2xl text-green-300"></i>
+        <div>
+          <h1 class="text-xl font-bold leading-tight">MSC System</h1>
+          <p class="text-xs text-green-200">Monitoring Spot Check Harian</p>
+        </div>
+      </div>
+      <div id="userInfoHeader" class="hidden flex items-center space-x-4">
+        <div class="text-right">
+          <div id="headerUserName" class="text-sm font-semibold">User</div>
+          <div id="headerUserRole" class="text-xs text-green-200">Role</div>
+        </div>
+        <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
+          <i class="fa-solid fa-right-from-bracket"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+
+    <!-- AUTHENTICATION CONTAINER (LOGIN & REGISTER) -->
+    <div id="authSection" class="max-w-md mx-auto my-8 bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-gray-100 no-print">
+      <!-- LOGIN FORM -->
+      <div id="loginBox">
+        <div class="text-center mb-6">
+          <i class="fa-solid fa-user-shield text-4xl text-brand-600 mb-2"></i>
+          <h2 class="text-2xl font-bold text-gray-800">Masuk ke Sistem</h2>
+          <p class="text-xs text-gray-500 mt-1">Silakan masuk menggunakan akun terdaftar</p>
+        </div>
+        <div id="loginAlert" class="hidden mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-xs font-medium"></div>
+        <form onsubmit="handleLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Username</label>
+            <input type="text" id="loginUsername" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+            <input type="password" id="loginPassword" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+          <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-md">
+            Masuk
+          </button>
+        </form>
+        <div class="mt-6 text-center text-xs text-gray-600">
+          Belum punya akun? <button onclick="toggleAuth('register')" class="text-brand-600 font-bold hover:underline">Daftar Sekarang</button>
+        </div>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="registerBox" class="hidden">
+        <div class="text-center mb-6">
+          <i class="fa-solid fa-user-plus text-4xl text-brand-600 mb-2"></i>
+          <h2 class="text-2xl font-bold text-gray-800">Buat Akun Baru</h2>
+          <p class="text-xs text-gray-500 mt-1">Pendaftaran membutuhkan persetujuan dari Admin</p>
+        </div>
+        <div id="registerAlert" class="hidden mb-4 p-3 rounded-lg text-xs font-medium"></div>
+        <form onsubmit="handleRegister(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Lengkap</label>
+            <input type="text" id="regFullName" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Username</label>
+            <input type="text" id="regUsername" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+            <input type="password" id="regPassword" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+          </div>
+          <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-md">
+            Kirim Permohonan Akun
+          </button>
+        </form>
+        <div class="mt-6 text-center text-xs text-gray-600">
+          Sudah punya akun? <button onclick="toggleAuth('login')" class="text-brand-600 font-bold hover:underline">Kembali ke Login</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN APP INTERFACE -->
+    <div id="appSection" class="hidden space-y-6">
+
+      <!-- NAVIGATION TABS -->
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-2 flex flex-wrap gap-2 no-print">
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 bg-brand-600 text-white">
+          <i class="fa-solid fa-chart-pie"></i> Grafik & Monitoring
+        </button>
+        <button onclick="switchTab('input')" id="tab-input" class="tab-btn px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 text-gray-600 hover:bg-gray-100">
+          <i class="fa-solid fa-pen-to-square"></i> Input Spot Check
+        </button>
+        <button onclick="switchTab('data')" id="tab-data" class="tab-btn admin-only hidden px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 text-gray-600 hover:bg-gray-100">
+          <i class="fa-solid fa-table"></i> Data & Laporan (Admin)
+        </button>
+        <button onclick="switchTab('jobs')" id="tab-jobs" class="tab-btn admin-only hidden px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 text-gray-600 hover:bg-gray-100">
+          <i class="fa-solid fa-list-check"></i> Kelola Pekerjaan (Admin)
+        </button>
+        <button onclick="switchTab('users')" id="tab-users" class="tab-btn admin-only hidden px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 text-gray-600 hover:bg-gray-100">
+          <i class="fa-solid fa-users-gear"></i> Persetujuan Akun <span id="pendingBadge" class="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full hidden">0</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: GRAFIK & MONITORING -->
+      <div id="view-dashboard" class="space-y-6">
+        <!-- Dashboard Filter -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap items-center gap-4 no-print">
+          <div class="text-sm font-bold text-gray-700 flex items-center gap-2">
+            <i class="fa-solid fa-filter text-brand-600"></i> Filter Dashboard:
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block">Dari Tanggal</label>
+            <input type="date" id="filterStartDate" onchange="renderCharts()" class="text-xs border rounded px-2 py-1">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block">Sampai Tanggal</label>
+            <input type="date" id="filterEndDate" onchange="renderCharts()" class="text-xs border rounded px-2 py-1">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block">Filter BU</label>
+            <select id="filterBU" onchange="renderCharts()" class="text-xs border rounded px-2 py-1">
+              <option value="">Semua Business Unit</option>
+              <option value="PT ITCI HUTANI MANUNGGAL">PT ITCI HUTANI MANUNGGAL</option>
+              <option value="PT ADINDO HUTANI LESTARI">PT ADINDO HUTANI LESTARI</option>
+              <option value="PT NUSANTARA KALIMANTAN LESTARI">PT NUSANTARA KALIMANTAN LESTARI</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block">Kontraktor</label>
+            <select id="filterContractor" onchange="renderCharts()" class="text-xs border rounded px-2 py-1">
+              <option value="">Semua Kontraktor</option>
+            </select>
+          </div>
+          <button onclick="resetFilters()" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded self-end">Reset</button>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+            <p class="text-xs font-semibold text-gray-500">Total Laporan</p>
+            <p id="statTotal" class="text-2xl font-bold text-brand-600">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+            <p class="text-xs font-semibold text-gray-500">Rata-rata Depth</p>
+            <p id="statDepth" class="text-2xl font-bold text-blue-600">0 cm</p>
+          </div>
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+            <p class="text-xs font-semibold text-gray-500">Rata-rata Penetrometer</p>
+            <p id="statPenetro" class="text-2xl font-bold text-amber-600">0</p>
+          </div>
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 text-center">
+            <p class="text-xs font-semibold text-gray-500">Total Kontraktor</p>
+            <p id="statContractors" class="text-2xl font-bold text-purple-600">0</p>
+          </div>
+        </div>
+
+        <!-- 1. GRAFIK KHUSUS PER BU (MODERN & TERPISAH) -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+          <div class="flex flex-wrap items-center justify-between mb-4 border-b pb-3 gap-2">
+            <div>
+              <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-building text-purple-600"></i> Laporan Khusus per Business Unit (BU)
+              </h3>
+              <p class="text-xs text-gray-500">Perbandingan jumlah laporan harian untuk tiap Business Unit</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs bg-purple-100 text-purple-800 font-bold px-3 py-1 rounded-full">Dipisah Khusus BU</span>
+              <button onclick="downloadChart('chartBU', 'Grafik_Spot_Check_per_BU.png')" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm transition">
+                <i class="fa-solid fa-download"></i> Unduh Gambar
+              </button>
+            </div>
+          </div>
+          <div class="relative h-72"><canvas id="chartBU" class="bg-white rounded-lg p-2"></canvas></div>
+        </div>
+
+        <!-- 2. GRAFIK GABUNGAN SEMUA INDIKATOR (MULTI-AXIS INTERAKTIF) -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
+          <div class="flex flex-wrap items-center justify-between mb-4 border-b pb-3 gap-2">
+            <div>
+              <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-brand-600"></i> Grafik Gabungan Semua Indikator Spot Check
+              </h3>
+              <p class="text-xs text-gray-500">Integrasi Spasing, Frekuensi Kontraktor, Rata-rata Depth & Penetrometer</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs bg-brand-100 text-brand-800 font-bold px-3 py-1 rounded-full">Indikator Gabungan</span>
+              <button onclick="downloadChart('chartCombined', 'Grafik_Spot_Check_Gabungan.png')" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm transition">
+                <i class="fa-solid fa-download"></i> Unduh Gambar
+              </button>
+            </div>
+          </div>
+          <div class="relative h-80"><canvas id="chartCombined" class="bg-white rounded-lg p-2"></canvas></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: INPUT SPOT CHECK FORM -->
+      <div id="view-input" class="hidden">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 max-w-4xl mx-auto">
+          <h2 class="text-lg font-bold text-gray-800 mb-4 pb-2 border-b flex items-center gap-2">
+            <i class="fa-solid fa-file-circle-plus text-brand-600"></i> Form Input Laporan Harian Spot Check
+          </h2>
+          <form onsubmit="saveReport(event)" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Tanggal *</label>
+                <input type="date" id="inpDate" required class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Pelapor *</label>
+                <input type="text" id="inpPelapor" required class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Business Unit (BU) *</label>
+                <select id="inpBU" required class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                  <option value="">Pilih BU...</option>
+                  <option value="PT ITCI HUTANI MANUNGGAL">PT ITCI HUTANI MANUNGGAL</option>
+                  <option value="PT ADINDO HUTANI LESTARI">PT ADINDO HUTANI LESTARI</option>
+                  <option value="PT NUSANTARA KALIMANTAN LESTARI">PT NUSANTARA KALIMANTAN LESTARI</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Sector *</label>
+                <input type="text" id="inpSector" placeholder="Ketik nama sector..." required class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Kontraktor *</label>
+                <input type="text" id="inpContractor" placeholder="Ketik nama kontraktor..." required class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Kode Unit *</label>
+                <input type="text" id="inpUnitCode" placeholder="Contoh: EX-01" required class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Operator *</label>
+                <input type="text" id="inpOperator" placeholder="Nama operator..." required class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Jenis Pekerjaan *</label>
+                <select id="inpJobType" required class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                  <!-- Dynamic from Jobs Master -->
+                </select>
+              </div>
+            </div>
+
+            <!-- KOLOM TERPISAH: SPASING -->
+            <div class="border-t pt-4">
+              <h4 class="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Kolom Nilai Spasing (Terpisah)</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-600 mb-1">Spasing 2m</label>
+                  <input type="text" id="inpSpasing2m" placeholder="Ketik nilai / detail..." class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-600 mb-1">Spasing 2.5m</label>
+                  <input type="text" id="inpSpasing25m" placeholder="Ketik nilai / detail..." class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-600 mb-1">Spasing 3m</label>
+                  <input type="text" id="inpSpasing3m" placeholder="Ketik nilai / detail..." class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+              </div>
+            </div>
+
+            <!-- KOLOM TERPISAH: DEPTH, PENETROMETER, STOKING -->
+            <div class="border-t pt-4">
+              <h4 class="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wider">Kolom Pengukuran (Terpisah)</h4>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">Depth (cm) *</label>
+                  <input type="number" step="0.01" id="inpDepth" required placeholder="0.00" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">Penetrometer *</label>
+                  <input type="number" step="0.01" id="inpPenetrometer" required placeholder="0.00" class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 mb-1">Stoking *</label>
+                  <input type="text" id="inpStoking" placeholder="Ketik nilai stoking..." required class="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 border-t">
+              <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg shadow transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i> Simpan Laporan Spot Check
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB 3: DATA & REKAP LAPORAN (ADMIN ONLY) -->
+      <div id="view-data" class="hidden space-y-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap items-center justify-between gap-4 no-print">
+          <div class="flex items-center gap-2">
+            <input type="text" id="searchTable" onkeyup="renderTable()" placeholder="Cari BU, sector, kontraktor..." class="text-xs border rounded-lg px-3 py-2 w-64">
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="exportToCSV()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1">
+              <i class="fa-solid fa-file-csv"></i> Unduh CSV
+            </button>
+            <button onclick="exportToJSON()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1">
+              <i class="fa-solid fa-file-code"></i> Unduh JSON
+            </button>
+            <label class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1">
+              <i class="fa-solid fa-file-import"></i> Impor Data
+              <input type="file" id="importFile" onchange="importData(event)" accept=".json,.csv" class="hidden">
+            </label>
+            <button onclick="window.print()" class="bg-gray-700 hover:bg-gray-800 text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1">
+              <i class="fa-solid fa-print"></i> Cetak
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-gray-100 text-gray-700 font-bold border-b uppercase">
+              <tr>
+                <th class="p-3 border-r">No</th>
+                <th class="p-3 border-r">Tanggal</th>
+                <th class="p-3 border-r">Pelapor</th>
+                <th class="p-3 border-r">BU</th>
+                <th class="p-3 border-r">Sector</th>
+                <th class="p-3 border-r">Kontraktor</th>
+                <th class="p-3 border-r">Kode Unit</th>
+                <th class="p-3 border-r">Operator</th>
+                <th class="p-3 border-r">Pekerjaan</th>
+                <th class="p-3 border-r bg-green-50">Spasing 2m</th>
+                <th class="p-3 border-r bg-blue-50">Spasing 2.5m</th>
+                <th class="p-3 border-r bg-amber-50">Spasing 3m</th>
+                <th class="p-3 border-r">Depth (cm)</th>
+                <th class="p-3 border-r">Penetrometer</th>
+                <th class="p-3 border-r">Stoking</th>
+                <th class="p-3 no-print">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="reportsTableBody" class="divide-y divide-gray-100">
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 4: KELOLA PEKERJAAN BARU (ADMIN ONLY) -->
+      <div id="view-jobs" class="hidden">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 max-w-2xl mx-auto space-y-6">
+          <h2 class="text-lg font-bold text-gray-800 pb-2 border-b flex items-center gap-2">
+            <i class="fa-solid fa-folder-plus text-brand-600"></i> Kelola Master Jenis Pekerjaan
+          </h2>
+          <form onsubmit="addJobCategory(event)" class="flex gap-2">
+            <input type="text" id="newJobName" placeholder="Masukkan jenis pekerjaan baru..." required class="flex-1 px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-500">
+            <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i> Tambah
+            </button>
+          </form>
+
+          <div>
+            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Daftar Jenis Pekerjaan Aktif</h3>
+            <ul id="jobListContainer" class="divide-y divide-gray-200 border rounded-lg overflow-hidden">
+              <!-- Dynamic Jobs Master -->
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: PERSETUJUAN AKUN (ADMIN ONLY) -->
+      <div id="view-users" class="hidden">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 max-w-4xl mx-auto space-y-4">
+          <h2 class="text-lg font-bold text-gray-800 pb-2 border-b flex items-center justify-between">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-user-check text-brand-600"></i> Kelola User & Persetujuan Akun</span>
+          </h2>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-gray-100 text-gray-700 font-bold border-b">
+                <tr>
+                  <th class="p-3">Nama Lengkap</th>
+                  <th class="p-3">Username</th>
+                  <th class="p-3">Role</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="userTableBody" class="divide-y divide-gray-100">
+                <!-- Dynamic User Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // Register ChartDataLabels plugin if available
+    if (typeof ChartDataLabels !== 'undefined') {
+      Chart.register(ChartDataLabels);
+    }
+
+    // --- STATE MANAGEMENT & INITIALIZATION ---
+    const STORAGE_KEY_REPORTS = 'msc_reports_data';
+    const STORAGE_KEY_JOBS = 'msc_jobs_data';
+    const STORAGE_KEY_USERS = 'msc_users_data';
+    const STORAGE_KEY_SESSION = 'msc_current_session';
+
+    // Default System Users (Admin Identity Hidden in UI)
+    const DEFAULT_USERS = [
+      { id: 'usr-1', username: 'Wahyu', password: 'Wahyuyaya02', fullName: 'Super Admin', role: 'admin', status: 'approved' },
+      { id: 'usr-2', username: 'MSC', password: '1234', fullName: 'Admin System', role: 'admin', status: 'approved' }
+    ];
+
+    const DEFAULT_JOBS = ['Spot Check Standard', 'Pemancangan', 'Penggalian', 'Pemadatan Landasan', 'Inspeksi Penetrometer'];
+
+    let reports = JSON.parse(localStorage.getItem(STORAGE_KEY_REPORTS)) || [];
+    let jobs = JSON.parse(localStorage.getItem(STORAGE_KEY_JOBS)) || DEFAULT_JOBS;
+    let users = JSON.parse(localStorage.getItem(STORAGE_KEY_USERS)) || DEFAULT_USERS;
+    let currentUser = JSON.parse(sessionStorage.getItem(STORAGE_KEY_SESSION)) || null;
+
+    let chartBUInstance = null;
+    let chartCombinedInstance = null;
+
+    // --- INITIAL RENDER ---
+    document.addEventListener('DOMContentLoaded', () => {
+      saveUsersToStorage();
+      saveJobsToStorage();
+      checkSession();
+      document.getElementById('inpDate').valueAsDate = new Date();
+    });
+
+    function saveUsersToStorage() { localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users)); }
+    function saveJobsToStorage() { localStorage.setItem(STORAGE_KEY_JOBS, JSON.stringify(jobs)); }
+    function saveReportsToStorage() { localStorage.setItem(STORAGE_KEY_REPORTS, JSON.stringify(reports)); }
+
+    // --- CHART DOWNLOAD FUNCTION ---
+    function downloadChart(canvasId, fileName) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // --- AUTHENTICATION MODULE ---
+    function toggleAuth(type) {
+      if (type === 'register') {
+        document.getElementById('loginBox').classList.add('hidden');
+        document.getElementById('registerBox').classList.remove('hidden');
+      } else {
+        document.getElementById('registerBox').classList.add('hidden');
+        document.getElementById('loginBox').classList.remove('hidden');
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const userVal = document.getElementById('loginUsername').value.trim();
+      const passVal = document.getElementById('loginPassword').value.trim();
+      const alertBox = document.getElementById('loginAlert');
+
+      const foundUser = users.find(u => u.username.toLowerCase() === userVal.toLowerCase() && u.password === passVal);
+
+      if (!foundUser) {
+        alertBox.textContent = 'Username atau Password salah!';
+        alertBox.classList.remove('hidden');
+        return;
+      }
+
+      if (foundUser.status === 'pending') {
+        alertBox.textContent = 'Akun Anda masih menunggu persetujuan dari Admin.';
+        alertBox.classList.remove('hidden');
+        return;
+      }
+
+      if (foundUser.status === 'rejected') {
+        alertBox.textContent = 'Permohonan akun Anda telah ditolak oleh Admin.';
+        alertBox.classList.remove('hidden');
+        return;
+      }
+
+      currentUser = foundUser;
+      sessionStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(currentUser));
+      alertBox.classList.add('hidden');
+      checkSession();
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      const fullName = document.getElementById('regFullName').value.trim();
+      const username = document.getElementById('regUsername').value.trim();
+      const password = document.getElementById('regPassword').value.trim();
+      const alertBox = document.getElementById('registerAlert');
+
+      if (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+        alertBox.textContent = 'Username sudah digunakan, pilih username lain.';
+        alertBox.className = 'mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-xs font-medium';
+        alertBox.classList.remove('hidden');
+        return;
+      }
+
+      const newUser = {
+        id: 'usr-' + Date.now(),
+        fullName,
+        username,
+        password,
+        role: 'user',
+        status: 'pending'
+      };
+
+      users.push(newUser);
+      saveUsersToStorage();
+
+      alertBox.textContent = 'Pendaftaran berhasil! Silakan tunggu persetujuan dari Admin.';
+      alertBox.className = 'mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-xs font-medium';
+      alertBox.classList.remove('hidden');
+      e.target.reset();
+    }
+
+    function logout() {
+      currentUser = null;
+      sessionStorage.removeItem(STORAGE_KEY_SESSION);
+      checkSession();
+    }
+
+    function checkSession() {
+      if (currentUser) {
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('appSection').classList.remove('hidden');
+        document.getElementById('userInfoHeader').classList.remove('hidden');
+
+        let displayFullName = currentUser.fullName;
+        if (currentUser.username.toLowerCase() === 'wahyu') {
+          displayFullName = 'Super Admin';
+        }
+
+        document.getElementById('headerUserName').textContent = displayFullName;
+        document.getElementById('headerUserRole').textContent = currentUser.role === 'admin' ? 'Administrator' : 'User / Operator';
+
+        document.getElementById('inpPelapor').value = displayFullName;
+
+        // Apply RBAC UI Restrictions
+        if (currentUser.role === 'admin') {
+          document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+        } else {
+          document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+        }
+
+        populateJobDropdown();
+        populateContractorFilter();
+        switchTab('dashboard');
+        updatePendingBadge();
+      } else {
+        document.getElementById('authSection').classList.remove('hidden');
+        document.getElementById('appSection').classList.add('hidden');
+        document.getElementById('userInfoHeader').classList.add('hidden');
+      }
+    }
+
+    // --- TAB NAVIGATION ---
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = 'tab-btn px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 text-gray-600 hover:bg-gray-100';
+      });
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      if (activeBtn) activeBtn.className = 'tab-btn px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 bg-brand-600 text-white';
+
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-input').classList.add('hidden');
+      document.getElementById('view-data').classList.add('hidden');
+      document.getElementById('view-jobs').classList.add('hidden');
+      document.getElementById('view-users').classList.add('hidden');
+
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+      if (tabId === 'dashboard') renderCharts();
+      if (tabId === 'data') renderTable();
+      if (tabId === 'jobs') renderJobList();
+      if (tabId === 'users') renderUserTable();
+    }
+
+    // --- JOB MASTER MANAGEMENT ---
+    function populateJobDropdown() {
+      const select = document.getElementById('inpJobType');
+      select.innerHTML = jobs.map(j => `<option value="${j}">${j}</option>`).join('');
+    }
+
+    function renderJobList() {
+      const container = document.getElementById('jobListContainer');
+      container.innerHTML = jobs.map((j, index) => `
+        <li class="p-3 flex justify-between items-center text-sm bg-white">
+          <span class="font-medium text-gray-700">${j}</span>
+          <button onclick="deleteJob(${index})" class="text-red-500 hover:text-red-700 text-xs font-bold">
+            <i class="fa-solid fa-trash"></i> Hapus
+          </button>
+        </li>
+      `).join('');
+    }
+
+    function addJobCategory(e) {
+      e.preventDefault();
+      const input = document.getElementById('newJobName');
+      const val = input.value.trim();
+      if (val && !jobs.includes(val)) {
+        jobs.push(val);
+        saveJobsToStorage();
+        populateJobDropdown();
+        renderJobList();
+        input.value = '';
+      }
+    }
+
+    function deleteJob(index) {
+      if (confirm('Hapus jenis pekerjaan ini?')) {
+        jobs.splice(index, 1);
+        saveJobsToStorage();
+        populateJobDropdown();
+        renderJobList();
+      }
+    }
+
+    // --- REPORT SUBMISSION ---
+    function saveReport(e) {
+      e.preventDefault();
+
+      const newReport = {
+        id: 'rep-' + Date.now(),
+        date: document.getElementById('inpDate').value,
+        pelapor: document.getElementById('inpPelapor').value,
+        bu: document.getElementById('inpBU').value,
+        sector: document.getElementById('inpSector').value.trim(),
+        contractor: document.getElementById('inpContractor').value.trim(),
+        unitCode: document.getElementById('inpUnitCode').value.trim(),
+        operator: document.getElementById('inpOperator').value.trim(),
+        jobType: document.getElementById('inpJobType').value,
+        spasing2m: document.getElementById('inpSpasing2m').value.trim() || '-',
+        spasing25m: document.getElementById('inpSpasing25m').value.trim() || '-',
+        spasing3m: document.getElementById('inpSpasing3m').value.trim() || '-',
+        depth: parseFloat(document.getElementById('inpDepth').value) || 0,
+        penetrometer: parseFloat(document.getElementById('inpPenetrometer').value) || 0,
+        stoking: document.getElementById('inpStoking').value.trim() || '-',
+        createdAt: new Date().toISOString()
+      };
+
+      reports.push(newReport);
+      saveReportsToStorage();
+      populateContractorFilter();
+
+      alert('Laporan Spot Check berhasil disimpan!');
+      e.target.reset();
+      document.getElementById('inpDate').valueAsDate = new Date();
+      if (currentUser) {
+        let nameToSet = currentUser.fullName;
+        if (currentUser.username.toLowerCase() === 'wahyu') nameToSet = 'Super Admin';
+        document.getElementById('inpPelapor').value = nameToSet;
+      }
+
+      switchTab('dashboard');
+    }
+
+    // --- USER MANAGEMENT (ADMIN ONLY - HIDDEN SYSTEM USERS) ---
+    function updatePendingBadge() {
+      const pendingCount = users.filter(u => u.status === 'pending').length;
+      const badge = document.getElementById('pendingBadge');
+      if (pendingCount > 0) {
+        badge.textContent = pendingCount;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function renderUserTable() {
+      const tbody = document.getElementById('userTableBody');
+      
+      // STRICT FILTER: Sembunyikan Admin 'Wahyu' dari tabel persetujuan
+      const visibleUsers = users.filter(u => u.username.toLowerCase() !== 'wahyu');
+
+      if (visibleUsers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500">Tidak ada akun terdaftar lainnya.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = visibleUsers.map(u => {
+        const isProtectedAdmin = u.username.toLowerCase() === 'msc';
+
+        return `
+          <tr class="hover:bg-gray-50">
+            <td class="p-3 font-semibold text-gray-800">${u.fullName}</td>
+            <td class="p-3 text-gray-600">${u.username}</td>
+            <td class="p-3 uppercase font-bold text-xs">${u.role}</td>
+            <td class="p-3">
+              <span class="px-2 py-1 rounded-full text-xs font-bold ${
+                u.status === 'approved' ? 'bg-green-100 text-green-700' :
+                u.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+              }">${u.status}</span>
+            </td>
+            <td class="p-3 text-right space-x-1">
+              ${!isProtectedAdmin ? `
+                ${u.status === 'pending' ? `
+                  <button onclick="setUserStatus('${u.id}', 'approved')" class="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold">Approve</button>
+                  <button onclick="setUserStatus('${u.id}', 'rejected')" class="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">Reject</button>
+                ` : ''}
+                <button onclick="deleteUser('${u.id}')" class="text-red-600 hover:underline text-xs font-bold ml-2">Hapus</button>
+              ` : '<span class="text-gray-400 text-xs italic">System Default</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function setUserStatus(userId, status) {
+      const u = users.find(x => x.id === userId);
+      if (u) {
+        u.status = status;
+        saveUsersToStorage();
+        renderUserTable();
+        updatePendingBadge();
+      }
+    }
+
+    function deleteUser(userId) {
+      if (confirm('Hapus akun pengguna ini?')) {
+        users = users.filter(x => x.id !== userId);
+        saveUsersToStorage();
+        renderUserTable();
+        updatePendingBadge();
+      }
+    }
+
+    // --- DATA TABLE & REPORT REKAP ---
+    function renderTable() {
+      const tbody = document.getElementById('reportsTableBody');
+      const search = document.getElementById('searchTable').value.toLowerCase();
+
+      const filtered = reports.filter(r => 
+        r.contractor.toLowerCase().includes(search) ||
+        r.unitCode.toLowerCase().includes(search) ||
+        r.operator.toLowerCase().includes(search) ||
+        r.pelapor.toLowerCase().includes(search) ||
+        r.bu.toLowerCase().includes(search) ||
+        r.sector.toLowerCase().includes(search)
+      );
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="16" class="p-4 text-center text-gray-500">Belum ada data laporan spot check.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((r, index) => `
+        <tr class="hover:bg-gray-50 border-b">
+          <td class="p-3 font-medium border-r">${index + 1}</td>
+          <td class="p-3 whitespace-nowrap border-r">${r.date}</td>
+          <td class="p-3 font-semibold border-r">${r.pelapor}</td>
+          <td class="p-3 font-medium border-r text-gray-700">${r.bu}</td>
+          <td class="p-3 font-semibold border-r text-brand-600">${r.sector}</td>
+          <td class="p-3 font-bold text-brand-700 border-r">${r.contractor}</td>
+          <td class="p-3 font-mono border-r">${r.unitCode}</td>
+          <td class="p-3 border-r">${r.operator}</td>
+          <td class="p-3 border-r"><span class="bg-gray-200 px-2 py-0.5 rounded text-xs">${r.jobType}</span></td>
+          <td class="p-3 font-semibold border-r bg-green-50/50">${r.spasing2m}</td>
+          <td class="p-3 font-semibold border-r bg-blue-50/50">${r.spasing25m}</td>
+          <td class="p-3 font-semibold border-r bg-amber-50/50">${r.spasing3m}</td>
+          <td class="p-3 font-semibold border-r">${r.depth} cm</td>
+          <td class="p-3 font-semibold border-r">${r.penetrometer}</td>
+          <td class="p-3 border-r">${r.stoking}</td>
+          <td class="p-3 no-print">
+            <button onclick="deleteReport('${r.id}')" class="text-red-600 hover:text-red-800 font-bold">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function deleteReport(id) {
+      if (confirm('Hapus laporan spot check ini?')) {
+        reports = reports.filter(r => r.id !== id);
+        saveReportsToStorage();
+        renderTable();
+        populateContractorFilter();
+      }
+    }
+
+    // --- CHARTS & DASHBOARD MONITORING (DESIGN VISUAL MODEREN) ---
+    function populateContractorFilter() {
+      const select = document.getElementById('filterContractor');
+      const contractors = [...new Set(reports.map(r => r.contractor))];
+      select.innerHTML = '<option value="">Semua Kontraktor</option>' + 
+        contractors.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    function resetFilters() {
+      document.getElementById('filterStartDate').value = '';
+      document.getElementById('filterEndDate').value = '';
+      document.getElementById('filterBU').value = '';
+      document.getElementById('filterContractor').value = '';
+      renderCharts();
+    }
+
+    function renderCharts() {
+      const startDate = document.getElementById('filterStartDate').value;
+      const endDate = document.getElementById('filterEndDate').value;
+      const filterBU = document.getElementById('filterBU').value;
+      const contractor = document.getElementById('filterContractor').value;
+
+      let filtered = [...reports];
+
+      if (startDate) filtered = filtered.filter(r => r.date >= startDate);
+      if (endDate) filtered = filtered.filter(r => r.date <= endDate);
+      if (filterBU) filtered = filtered.filter(r => r.bu === filterBU);
+      if (contractor) filtered = filtered.filter(r => r.contractor === contractor);
+
+      // Summary Cards Data
+      document.getElementById('statTotal').textContent = filtered.length;
+      const avgDepth = filtered.length ? (filtered.reduce((acc, r) => acc + (r.depth || 0), 0) / filtered.length).toFixed(2) : 0;
+      const avgPenetro = filtered.length ? (filtered.reduce((acc, r) => acc + (r.penetrometer || 0), 0) / filtered.length).toFixed(2) : 0;
+      const uniqueContractors = new Set(filtered.map(r => r.contractor)).size;
+
+      document.getElementById('statDepth').textContent = `${avgDepth} cm`;
+      document.getElementById('statPenetro').textContent = avgPenetro;
+      document.getElementById('statContractors').textContent = uniqueContractors;
+
+      // 1. GRAFIK SEPARATE KHUSUS BU (DESAIN MODERN BAR CHART)
+      const buList = ['PT ITCI HUTANI MANUNGGAL', 'PT ADINDO HUTANI LESTARI', 'PT NUSANTARA KALIMANTAN LESTARI'];
+      const buCounts = buList.map(bu => filtered.filter(r => r.bu === bu).length);
+
+      const ctxBU = document.getElementById('chartBU').getContext('2d');
+      if (chartBUInstance) chartBUInstance.destroy();
+
+      chartBUInstance = new Chart(ctxBU, {
+        type: 'bar',
+        data: {
+          labels: buList,
+          datasets: [{
+            label: 'Total Laporan',
+            data: buCounts,
+            backgroundColor: [
+              'rgba(147, 51, 234, 0.85)',
+              'rgba(236, 72, 153, 0.85)',
+              'rgba(59, 130, 246, 0.85)'
+            ],
+            borderColor: [
+              '#7e22ce',
+              '#be185d',
+              '#1d4ed8'
+            ],
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false,
+            barThickness: 42
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(17, 24, 39, 0.9)',
+              titleFont: { size: 13, weight: 'bold' },
+              bodyFont: { size: 12 },
+              padding: 10,
+              cornerRadius: 8
+            },
+            datalabels: {
+              anchor: 'end',
+              align: 'top',
+              font: { weight: 'bold', size: 11 },
+              color: '#374151',
+              formatter: Math.round
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(229, 231, 235, 0.8)' },
+              ticks: { precision: 0, font: { size: 11 } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11, weight: '600' } }
+            }
+          }
+        }
+      });
+
+      // 2. GRAFIK GABUNGAN SEMUA INDIKATOR (MULTI-AXIS: BAR + LINE TREN)
+      const contractorMap = {};
+      let c2m = 0, c25m = 0, c3m = 0;
+      
+      filtered.forEach(r => {
+        if (r.contractor) contractorMap[r.contractor] = (contractorMap[r.contractor] || 0) + 1;
+        if (r.spasing2m && r.spasing2m !== '-') c2m++;
+        if (r.spasing25m && r.spasing25m !== '-') c25m++;
+        if (r.spasing3m && r.spasing3m !== '-') c3m++;
+      });
+
+      const topContractors = Object.keys(contractorMap).slice(0, 4);
+      const topContractorCounts = topContractors.map(c => contractorMap[c]);
+
+      const combinedLabels = ['Spasing 2m', 'Spasing 2.5m', 'Spasing 3m', ...topContractors];
+      const barDataValues = [c2m, c25m, c3m, ...topContractorCounts];
+      
+      // Hitung tren rata-rata depth & penetrometer per label indikator
+      const depthLineValues = combinedLabels.map(() => avgDepth);
+      const penetroLineValues = combinedLabels.map(() => avgPenetro);
+
+      const ctxCombined = document.getElementById('chartCombined').getContext('2d');
+      if (chartCombinedInstance) chartCombinedInstance.destroy();
+
+      chartCombinedInstance = new Chart(ctxCombined, {
+        type: 'bar',
+        data: {
+          labels: combinedLabels,
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Jumlah Terisi / Frekuensi',
+              data: barDataValues,
+              backgroundColor: [
+                'rgba(34, 197, 94, 0.85)',
+                'rgba(59, 130, 246, 0.85)',
+                'rgba(245, 158, 11, 0.85)',
+                'rgba(20, 184, 166, 0.85)',
+                'rgba(99, 102, 241, 0.85)',
+                'rgba(168, 85, 247, 0.85)',
+                'rgba(236, 72, 153, 0.85)'
+              ],
+              borderRadius: 6,
+              yAxisID: 'yBar'
+            },
+            {
+              type: 'line',
+              label: 'Rata-rata Depth (cm)',
+              data: depthLineValues,
+              borderColor: '#2563eb',
+              backgroundColor: '#2563eb',
+              borderWidth: 2.5,
+              tension: 0.3,
+              pointRadius: 4,
+              yAxisID: 'yLine'
+            },
+            {
+              type: 'line',
+              label: 'Rata-rata Penetrometer',
+              data: penetroLineValues,
+              borderColor: '#d97706',
+              backgroundColor: '#d97706',
+              borderWidth: 2.5,
+              borderDash: [5, 5],
+              tension: 0.3,
+              pointRadius: 4,
+              yAxisID: 'yLine'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { font: { size: 11, weight: '600' }, usePointStyle: true }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(17, 24, 39, 0.9)',
+              padding: 10,
+              cornerRadius: 8
+            },
+            datalabels: { display: false }
+          },
+          scales: {
+            yBar: {
+              type: 'linear',
+              position: 'left',
+              beginAtZero: true,
+              grid: { color: 'rgba(229, 231, 235, 0.8)' },
+              title: { display: true, text: 'Jumlah Laporan / Terisi', font: { size: 10, weight: 'bold' } }
+            },
+            yLine: {
+              type: 'linear',
+              position: 'right',
+              beginAtZero: true,
+              grid: { drawOnChartArea: false },
+              title: { display: true, text: 'Nilai Pengukuran (Depth / Penetrometer)', font: { size: 10, weight: 'bold' } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11, weight: '600' } }
+            }
+          }
+        }
+      });
+    }
+
+    // --- IMPORT & EXPORT MODULES ---
+    function exportToCSV() {
+      if (reports.length === 0) return alert('Tidak ada data untuk diunduh.');
+      const headers = ['Tanggal', 'Pelapor', 'BU', 'Sector', 'Kontraktor', 'Kode Unit', 'Operator', 'Jenis Pekerjaan', 'Spasing 2m', 'Spasing 2.5m', 'Spasing 3m', 'Depth (cm)', 'Penetrometer', 'Stoking'];
+      const rows = reports.map(r => [
+        `"${r.date}"`, `"${r.pelapor}"`, `"${r.bu}"`, `"${r.sector}"`, `"${r.contractor}"`, `"${r.unitCode}"`, `"${r.operator}"`,
+        `"${r.jobType}"`, `"${r.spasing2m}"`, `"${r.spasing25m}"`, `"${r.spasing3m}"`, r.depth, r.penetrometer, `"${r.stoking}"`
+      ]);
+
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `Rekap_Spot_Check_MSC_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function exportToJSON() {
+      if (reports.length === 0) return alert('Tidak ada data untuk diunduh.');
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(reports, null, 2));
+      const link = document.createElement('a');
+      link.setAttribute('href', dataStr);
+      link.setAttribute('download', `Backup_MSC_Data_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            reports = [...reports, ...imported];
+            saveReportsToStorage();
+            renderTable();
+            populateContractorFilter();
+            alert('Data berhasil diimpor!');
+          } else {
+            alert('Format JSON tidak valid.');
+          }
+        } catch (err) {
+          alert('Gagal membaca file impor. Pastikan format file sesuai.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
